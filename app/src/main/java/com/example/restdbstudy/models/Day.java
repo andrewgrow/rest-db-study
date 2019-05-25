@@ -9,10 +9,8 @@ import java.util.List;
  */
 public class Day {
 
-    @SerializedName("name")
     private String nameOfDay; // день недели
 
-    @SerializedName("schedule")
     private List<String> listSchedule; // расписание на этот день
 
     public String getNameOfDay() {

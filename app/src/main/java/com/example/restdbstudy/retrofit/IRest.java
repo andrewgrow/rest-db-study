@@ -14,10 +14,10 @@ import retrofit2.http.Query;
 public interface IRest {
 
     @GET("schedule")
-    public Call<List<Day>> getAllDays();
+    public Call<List<RestDay>> getAllDays();
 
     @GET("schedule")
-    public Call<List<Day>> getDay(
+    public Call<List<RestDay>> getDay(
             @Query("day") String dayName
     );
 }

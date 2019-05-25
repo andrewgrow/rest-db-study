@@ -57,29 +57,34 @@ public class Rest {
         // получаем объект Rest
         Rest rest = getInstance();
         // создаём вызов, который вернёт от сервиса результат работы метода getAllDays описанного в интерфейсе
-        Call<List<Day>> call = rest.service.getAllDays();
+        Call<List<RestDay>> call = rest.service.getAllDays();
 
         // формируем у вызова асинхронную работу (enqueue) с ожиданием результата через коллбек со списком дней
-        call.enqueue(new Callback<List<Day>>() {
+        call.enqueue(new Callback<List<RestDay>>() {
 
             // вызов коллбека с результатами
             @Override
-            public void onResponse(Call<List<Day>> call, Response<List<Day>> response) {
+            public void onResponse(Call<List<RestDay>> call, Response<List<RestDay>> response) {
                 // если ответ от сервера 200 ОК
                 if (response.code() == 200) {
+
+                    // Конвертацию из RestDay to Day
+                    List<RestDay> restDayList = response.body();
+                    List<Day> dayList = RestDay.convertRestToDay(restDayList);
+
                     // если коллбек на входе метода был не пустой, сообщаем ему о результате
                     if (callback != null) {
-                        callback.onCall(response.body());
+                        callback.onCall(dayList);
                     }
                 } else {
-                    Log.e(TAG, "error! response code " + response.code()
+                    Log.e(TAG, "error! -> response code " + response.code()
                             + ", " + response.message());
                 }
             }
 
             @Override
-            public void onFailure(Call<List<Day>> call, Throwable t) {
-                Log.e(TAG, t.getMessage());
+            public void onFailure(Call<List<RestDay>> call, Throwable t) {
+                Log.e(TAG, "onFailure! -> " + t.getMessage());
                 t.printStackTrace();
             }
         });
