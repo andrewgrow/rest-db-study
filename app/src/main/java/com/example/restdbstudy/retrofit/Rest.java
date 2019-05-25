@@ -72,6 +72,9 @@ public class Rest {
                     List<RestDay> restDayList = response.body();
                     List<Day> dayList = RestDay.convertRestToDay(restDayList);
 
+                    // новый список расписаний нужно сохранить в базу данных
+                    Day.saveDaysList(dayList);
+
                     // если коллбек на входе метода был не пустой, сообщаем ему о результате
                     if (callback != null) {
                         callback.onCall(dayList);
@@ -86,6 +89,18 @@ public class Rest {
             public void onFailure(Call<List<RestDay>> call, Throwable t) {
                 Log.e(TAG, "onFailure! -> " + t.getMessage());
                 t.printStackTrace();
+
+                // в отдельном треде достаём кешированный список дней и возвращаем коллбеку
+                Runnable runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        if (callback != null) {
+                            callback.onCall(Day.getCashedList());
+                        }
+                    }
+                };
+                Thread thread = new Thread(runnable);
+                thread.start();
             }
         });
     }

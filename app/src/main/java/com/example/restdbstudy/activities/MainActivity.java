@@ -54,17 +54,23 @@ public class MainActivity extends AppCompatActivity {
     private ScheduleCallback callback = new ScheduleCallback() {
         @Override
         public void onCall(List<Day> dayList) {
-            // если адаптер для дня пустой, то создаём его
-            if (daysAdapter == null) {
-                daysAdapter = new DaysAdapter();
-            }
+            // обработку коллбека будем делать в мэйн треде
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    // если адаптер для дня пустой, то создаём его
+                    if (daysAdapter == null) {
+                        daysAdapter = new DaysAdapter();
+                    }
 
-            // обновляем элементы в адаптере
-            daysAdapter.setNewItems(dayList);
-            // устанавливаем слушатель нажатий
-            daysAdapter.setClickListener(adapterItemClickListener);
-            // устанавливаем списку адаптер
-            recyclerView.setAdapter(daysAdapter);
+                    // обновляем элементы в адаптере
+                    daysAdapter.setNewItems(dayList);
+                    // устанавливаем слушатель нажатий
+                    daysAdapter.setClickListener(adapterItemClickListener);
+                    // устанавливаем списку адаптер
+                    recyclerView.setAdapter(daysAdapter);
+                }
+            });
         }
     };
 
