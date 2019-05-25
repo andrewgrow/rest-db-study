@@ -1,16 +1,19 @@
-package com.example.teststreaming.models;
+package com.example.restdbstudy.models;
 
 import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
 
+/**
+ * Модель которая хранит расписание для конкретного дня
+ */
 public class Day {
 
     @SerializedName("name")
-    private String nameOfDay;
+    private String nameOfDay; // день недели
 
     @SerializedName("schedule")
-    private List<String> listSchedule;
+    private List<String> listSchedule; // расписание на этот день
 
     public String getNameOfDay() {
         return nameOfDay;
