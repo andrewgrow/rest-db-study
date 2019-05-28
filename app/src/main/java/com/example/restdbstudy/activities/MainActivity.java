@@ -4,6 +4,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.view.View;
+import android.widget.Button;
 
 import com.example.restdbstudy.R;
 import com.example.restdbstudy.adapters.DaysAdapter;
@@ -17,7 +19,10 @@ import java.util.List;
  * Основной экран.
  * Отображает на экране список расписаний.
  */
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+
+    Button btnNetwork;
+    Button btnBD;
 
     private static final String TAG = MainActivity.class.getSimpleName(); // тег для логов
     private RecyclerView recyclerView; // основной список. Может отображать неделю, может только день.
@@ -43,8 +48,10 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this,
                 RecyclerView.VERTICAL, false));
 
-        // получаем список раписаний на все дни
-        Rest.getAllDays(callback);
+        btnNetwork = (Button) findViewById(R.id.btnNetwork);
+        btnBD = (Button) findViewById(R.id.btnBD);
+        btnNetwork.setOnClickListener(this);
+
     }
 
 
@@ -93,8 +100,9 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Меняем текст у кнопки назад + показываем кнопку
+     *
      * @param isEnabled true если нужно показать кнопку, false если нужно спрятать
-     * @param title заголовок который отображается возле кнопки назад
+     * @param title     заголовок который отображается возле кнопки назад
      */
     private void enableBackButton(boolean isEnabled, String title) {
         getSupportActionBar().setDisplayHomeAsUpEnabled(isEnabled);
@@ -121,5 +129,18 @@ public class MainActivity extends AppCompatActivity {
         // переопределённый метод для кнопки навигации это вызов метода кнопки назад
         onBackPressed();
         return super.onSupportNavigateUp();
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.btnNetwork:
+                // получаем список раписаний на все дни
+                Rest.getAllDays(callback);
+                break;
+            default:
+                break;
+        }
+
     }
 }
