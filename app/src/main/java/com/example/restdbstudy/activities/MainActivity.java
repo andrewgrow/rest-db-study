@@ -1,18 +1,16 @@
 package com.example.restdbstudy.activities;
 
-import android.annotation.SuppressLint;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
 import com.example.restdbstudy.R;
 import com.example.restdbstudy.adapters.DaysAdapter;
 import com.example.restdbstudy.adapters.ScheduleAdapter;
-import com.example.restdbstudy.database.DB;
+import com.example.restdbstudy.database.Database;
 import com.example.restdbstudy.models.Day;
 import com.example.restdbstudy.retrofit.Rest;
 
@@ -42,6 +40,8 @@ public class MainActivity extends AppCompatActivity {
     public interface ScheduleCallback {
         void onCall(List<Day> dayList);
     }
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,28 +53,19 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this,
                 RecyclerView.VERTICAL, false));
 
+        // найдём кнопку СЕТЬ и установим ей слушатель
         btnNetwork = (Button) findViewById(R.id.btnNetwork);
         btnNetwork.setOnClickListener(networkClickListener);
 
+        // найдём кнопку БАЗА ДАННЫХ и установим ей слушатель
         btnDB = (Button) findViewById(R.id.btnBD);
         btnDB.setOnClickListener(dbClickListener);
-
     }
 
 
     /**
-     * Коллбек в который придёт расписание для дня.
+     * @param dayList установить новый список дней в адаптер
      */
-    private ScheduleCallback callback = new ScheduleCallback() {
-        @Override
-        public void onCall(List<Day> dayList) {
-            // make new adapter
-            if (dayList != null && dayList.size() > 0) {
-                makeNewDaysAdapter(dayList);
-            }
-        }
-    };
-
     private void makeNewDaysAdapter(List<Day> dayList) {
         // check if null
         if (dayList == null) {
@@ -94,33 +85,30 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(daysAdapter);
     }
 
+
+    /**
+     * Слушатель нажатия на кнопку СЕТЬ
+     */
     private View.OnClickListener networkClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            Rest.getAllDays(callback);
+            makeNewDaysAdapter(null); // clear ! очищаем адаптер
+            Rest.getAllDays(callback); // и просим у ретрофита вернуть новый список в наш коллбек
         }
     };
 
+
+    /**
+     * Слушатель нажатия на кнопку БАЗА ДАННЫХ
+     */
     private View.OnClickListener dbClickListener = new View.OnClickListener() {
-        @SuppressLint("CheckResult")
         @Override
         public void onClick(View v) {
-            DB.getAllDays()
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(new Consumer<List<Day>>() {
-                        @Override
-                        public void accept(List<Day> dayList) throws Exception {
-                            makeNewDaysAdapter(dayList);
-                        }
-                    }, new Consumer<Throwable>() {
-                        @Override
-                        public void accept(Throwable throwable) throws Exception {
-                            Log.e(TAG, throwable.getMessage());
-                            throwable.printStackTrace();
-                        }
-                    });
+            makeNewDaysAdapter(null); // clear ! очищаем адаптер
+            Database.getAllDays(callback); // и просим у базы данных вернуть новый список в наш коллбек
         }
     };
+
 
     /**
      * Коллбек для определения клика по элементу адаптера.
@@ -135,6 +123,20 @@ public class MainActivity extends AppCompatActivity {
             recyclerView.setAdapter(scheduleAdapter); // заменяем у списка адаптер дней на адаптер расписания конкретного дня
             isDayScheduleShowing = true; // меняем флаг
             enableBackButton(true, day.getNameOfDay()); // меняем текст у кнопки назад + показываем кнопку
+        }
+    };
+
+
+    /**
+     * Коллбек в который придёт расписание для дня.
+     */
+    private ScheduleCallback callback = new ScheduleCallback() {
+        @Override
+        public void onCall(List<Day> dayList) {
+            // make new adapter
+            if (dayList != null && dayList.size() > 0) {
+                makeNewDaysAdapter(dayList);
+            }
         }
     };
 

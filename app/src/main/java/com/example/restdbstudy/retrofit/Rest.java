@@ -4,13 +4,11 @@ import android.annotation.SuppressLint;
 import android.util.Log;
 
 import com.example.restdbstudy.activities.MainActivity;
-import com.example.restdbstudy.database.DB;
+import com.example.restdbstudy.database.Database;
 import com.example.restdbstudy.models.Day;
 
 import java.util.List;
 
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.functions.Consumer;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
@@ -28,7 +26,7 @@ public class Rest {
     private static Rest instance; // синглтон-объект класса
     private IRest service; // объект реализующий интерфейс для работы с сетью
 
-    // приватный конструкцтор, запрещающий создание других экземпляров класса
+    // приватный конструктор, запрещающий создание других экземпляров класса
     private Rest() {
         init();
     }
@@ -85,7 +83,7 @@ public class Rest {
                     List<Day> dayList = RestDay.convertRestToDay(restDayList);
 
                     // новый список расписаний нужно сохранить в базу данных
-                    DB.insertOrUpdateIfExists(dayList);
+                    Database.insertOrUpdateIfExists(dayList);
 
                     // если коллбек на входе метода был не пустой, сообщаем ему о результате
                     if (callback != null) {
@@ -104,23 +102,8 @@ public class Rest {
                 t.printStackTrace();
 
                 // если при выполнении сетевого запроса возникла ошибка, надо попросить у базы
-                // кешированный список и вернут ьего коллбеку
-                DB.getAllDays()
-                        .subscribeOn(AndroidSchedulers.mainThread())
-                        .subscribe(new Consumer<List<Day>>() {
-                            @Override
-                            public void accept(List<Day> dayList) throws Exception {
-                                if (callback != null) {
-                                    callback.onCall(dayList);
-                                }
-                            }
-                        }, new Consumer<Throwable>() {
-                            @Override
-                            public void accept(Throwable throwable) throws Exception {
-                                Log.e(TAG, throwable.getMessage());
-                                throwable.printStackTrace();
-                            }
-                        });
+                // кешированный (сохранённый) список и вернуть его коллбеку
+                Database.getAllDays(callback);
             }
         });
     }
