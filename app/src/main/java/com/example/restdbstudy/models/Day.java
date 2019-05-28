@@ -75,7 +75,13 @@ public class Day {
                 IDatabaseAccessObject dao = db.getDAO();
                 // перебираем все дни и вставляем каждый в базу
                 for (Day day : dayList) {
-                    dao.insert(day);
+                    String name = day.getNameOfDay();
+                    Day dbDay = dao.getDayByName(name);
+                    if (dbDay == null) {
+                        dao.insert(day);
+                    } else {
+                        dao.update(day);
+                    }
                 }
             }
         };
