@@ -1,12 +1,18 @@
 package com.example.restdbstudy.retrofit;
 
+import android.annotation.SuppressLint;
 import android.util.Log;
 
 import com.example.restdbstudy.activities.MainActivity;
+import com.example.restdbstudy.database.DB;
 import com.example.restdbstudy.models.Day;
 
 import java.util.List;
 
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.functions.Consumer;
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -41,9 +47,15 @@ public class Rest {
      * Непосредственное создание объекта для работы с сетью и его настройка
      */
     private void init() {
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
+
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("http://api.gahov.com/")
                 .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
                 .build();
 
         service = retrofit.create(IRest.class);
@@ -73,7 +85,7 @@ public class Rest {
                     List<Day> dayList = RestDay.convertRestToDay(restDayList);
 
                     // новый список расписаний нужно сохранить в базу данных
-                    Day.saveDaysList(dayList);
+                    DB.insertOrUpdateIfExists(dayList);
 
                     // если коллбек на входе метода был не пустой, сообщаем ему о результате
                     if (callback != null) {
@@ -85,22 +97,30 @@ public class Rest {
                 }
             }
 
+            @SuppressLint("CheckResult")
             @Override
             public void onFailure(Call<List<RestDay>> call, Throwable t) {
                 Log.e(TAG, "onFailure! -> " + t.getMessage());
                 t.printStackTrace();
 
-                // в отдельном треде достаём кешированный список дней и возвращаем коллбеку
-                Runnable runnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        if (callback != null) {
-                            callback.onCall(Day.getCashedList());
-                        }
-                    }
-                };
-                Thread thread = new Thread(runnable);
-                thread.start();
+                // если при выполнении сетевого запроса возникла ошибка, надо попросить у базы
+                // кешированный список и вернут ьего коллбеку
+                DB.getAllDays()
+                        .subscribeOn(AndroidSchedulers.mainThread())
+                        .subscribe(new Consumer<List<Day>>() {
+                            @Override
+                            public void accept(List<Day> dayList) throws Exception {
+                                if (callback != null) {
+                                    callback.onCall(dayList);
+                                }
+                            }
+                        }, new Consumer<Throwable>() {
+                            @Override
+                            public void accept(Throwable throwable) throws Exception {
+                                Log.e(TAG, throwable.getMessage());
+                                throwable.printStackTrace();
+                            }
+                        });
             }
         });
     }

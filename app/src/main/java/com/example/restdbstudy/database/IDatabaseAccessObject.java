@@ -9,18 +9,13 @@ import android.arch.persistence.room.Update;
 import com.example.restdbstudy.models.Day;
 
 import java.util.List;
+import io.reactivex.Flowable;
 
 /**
  * Интерфейс описывающий методы работы с таблицами.
  */
 @Dao
 public interface IDatabaseAccessObject {
-
-    /**
-     * @return список всех дней
-     */
-    @Query("SELECT * FROM day")
-    List<Day> getAll();
 
     /**
      * @param dayName имя дня недели для выборки из базы данных
@@ -46,4 +41,10 @@ public interface IDatabaseAccessObject {
      */
     @Delete
     void delete(Day day);
+
+    /**
+     * @return список всех дней
+     */
+    @Query("SELECT * FROM day")
+    Flowable<List<Day>> getAllDays();
 }

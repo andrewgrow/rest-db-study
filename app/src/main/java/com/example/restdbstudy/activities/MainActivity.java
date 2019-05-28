@@ -1,34 +1,40 @@
 package com.example.restdbstudy.activities;
 
+import android.annotation.SuppressLint;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
 import com.example.restdbstudy.R;
 import com.example.restdbstudy.adapters.DaysAdapter;
 import com.example.restdbstudy.adapters.ScheduleAdapter;
+import com.example.restdbstudy.database.DB;
 import com.example.restdbstudy.models.Day;
 import com.example.restdbstudy.retrofit.Rest;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.functions.Consumer;
 
 /**
  * Основной экран.
  * Отображает на экране список расписаний.
  */
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity {
 
     Button btnNetwork;
-    Button btnBD;
+    Button btnDB;
 
     private static final String TAG = MainActivity.class.getSimpleName(); // тег для логов
     private RecyclerView recyclerView; // основной список. Может отображать неделю, может только день.
     private DaysAdapter daysAdapter; // адаптер с днями
     private boolean isDayScheduleShowing; // флаг, который показывает, показывается ли сейчас расписание конкретного дня
-
 
     /**
      * Получает список расписания для конкретного дня
@@ -36,7 +42,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public interface ScheduleCallback {
         void onCall(List<Day> dayList);
     }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,8 +54,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 RecyclerView.VERTICAL, false));
 
         btnNetwork = (Button) findViewById(R.id.btnNetwork);
-        btnBD = (Button) findViewById(R.id.btnBD);
-        btnNetwork.setOnClickListener(this);
+        btnNetwork.setOnClickListener(networkClickListener);
+
+        btnDB = (Button) findViewById(R.id.btnBD);
+        btnDB.setOnClickListener(dbClickListener);
 
     }
 
@@ -61,23 +68,57 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ScheduleCallback callback = new ScheduleCallback() {
         @Override
         public void onCall(List<Day> dayList) {
-            // обработку коллбека будем делать в мэйн треде
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    // если адаптер для дня пустой, то создаём его
-                    if (daysAdapter == null) {
-                        daysAdapter = new DaysAdapter();
-                    }
+            // make new adapter
+            if (dayList != null && dayList.size() > 0) {
+                makeNewDaysAdapter(dayList);
+            }
+        }
+    };
 
-                    // обновляем элементы в адаптере
-                    daysAdapter.setNewItems(dayList);
-                    // устанавливаем слушатель нажатий
-                    daysAdapter.setClickListener(adapterItemClickListener);
-                    // устанавливаем списку адаптер
-                    recyclerView.setAdapter(daysAdapter);
-                }
-            });
+    private void makeNewDaysAdapter(List<Day> dayList) {
+        // check if null
+        if (dayList == null) {
+            dayList = new ArrayList<>();
+        }
+
+        // если адаптер для дня пустой, то создаём его
+        if (daysAdapter == null) {
+            daysAdapter = new DaysAdapter();
+        }
+
+        // обновляем элементы в адаптере
+        daysAdapter.setNewItems(dayList);
+        // устанавливаем слушатель нажатий
+        daysAdapter.setClickListener(adapterItemClickListener);
+        // устанавливаем списку адаптер
+        recyclerView.setAdapter(daysAdapter);
+    }
+
+    private View.OnClickListener networkClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            Rest.getAllDays(callback);
+        }
+    };
+
+    private View.OnClickListener dbClickListener = new View.OnClickListener() {
+        @SuppressLint("CheckResult")
+        @Override
+        public void onClick(View v) {
+            DB.getAllDays()
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new Consumer<List<Day>>() {
+                        @Override
+                        public void accept(List<Day> dayList) throws Exception {
+                            makeNewDaysAdapter(dayList);
+                        }
+                    }, new Consumer<Throwable>() {
+                        @Override
+                        public void accept(Throwable throwable) throws Exception {
+                            Log.e(TAG, throwable.getMessage());
+                            throwable.printStackTrace();
+                        }
+                    });
         }
     };
 
@@ -129,18 +170,5 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // переопределённый метод для кнопки навигации это вызов метода кнопки назад
         onBackPressed();
         return super.onSupportNavigateUp();
-    }
-
-    @Override
-    public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.btnNetwork:
-                // получаем список раписаний на все дни
-                Rest.getAllDays(callback);
-                break;
-            default:
-                break;
-        }
-
     }
 }
